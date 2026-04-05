@@ -134,7 +134,9 @@ dependencies = [
 name = "agentscript-compiler"
 version = "0.1.0"
 dependencies = [
+ "bumpalo",
  "chumsky",
+ "indexmap",
  "miette",
  "thiserror 2.0.18",
 ]
