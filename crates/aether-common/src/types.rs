@@ -21,6 +21,9 @@ pub struct JobSpec {
     pub id: [u8; 32],
     pub tier: ExecutionTier,
     pub data_commitment: DataCommitment,
+    /// When set, the job must include WASM bytes whose SHA-256 matches (MWVM preflight).
+    #[serde(default)]
+    pub wasm_sha256: Option<[u8; 32]>,
     /// Optional pinned lockfile hash for reproducible builds (hex or raw digest).
     pub cargo_lock_hash: Option<[u8; 32]>,
     /// Deterministic RNG / simulation seed (e.g. derived from job id + user nonce).

@@ -13,11 +13,17 @@ pub struct DefaultJobHandler<'a> {
 }
 
 impl JobHandler for DefaultJobHandler<'_> {
-    fn claim_and_execute(&mut self, spec: JobSpec) -> AetherResult<aether_common::traits::JobOutcome> {
+    fn claim_and_execute(
+        &mut self,
+        spec: JobSpec,
+        wasm: Option<&[u8]>,
+    ) -> AetherResult<aether_common::traits::JobOutcome> {
         if !self.config.can_claim(spec.tier) {
             return Err(AetherError::Config("node cannot claim this tier".into()));
         }
-        let (result, att) = self.runner.run_with_provider(&spec, self.provider)?;
+        let (result, att) = self
+            .runner
+            .run_with_provider(&spec, self.provider, wasm)?;
         Ok(aether_common::JobOutcome {
             result,
             attestation: att,

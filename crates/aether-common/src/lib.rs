@@ -4,6 +4,7 @@
 //! boundaries (Clean Architecture + dependency inversion).
 
 pub mod errors;
+pub mod guest_abi;
 pub mod traits;
 pub mod types;
 pub mod utils;

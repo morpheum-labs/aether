@@ -1,0 +1,16 @@
+[package]
+name = "aether-mwvm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "MWVM integration for Aether — WASM job validation and instantiation"
+
+[features]
+default = []
+# Full MWVM linker + hosts; needs a buildable morpheum-primitives / morpheum-proto tree.
+mwvm-full = ["dep:mwvm-sdk"]
+
+[dependencies]
+aether-common = { path = "../aether-common" }
+wasmtime = "28"
+mwvm-sdk = { path = "../../../mwvm/crates/mwvm-sdk", optional = true }

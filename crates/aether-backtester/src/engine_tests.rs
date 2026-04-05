@@ -13,6 +13,7 @@ mod tests {
                 merkle_root: [0u8; 32],
                 version_cid: String::new(),
             },
+            wasm_sha256: None,
             cargo_lock_hash: None,
             seed,
             initial_capital: "10000".into(),
