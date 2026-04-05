@@ -2,7 +2,7 @@
 
 ## Primary goal
 
-**Aether runs backtesting workloads for trading strategies expressed in AgentScript (QAS) and compiled to WebAssembly.** The language and toolchain live in **`agentscript-compiler`**; Aether consumes **WASM + `JobSpec` + data commitments + tier policy**, validates in a sandbox, and runs the backtest path (wasmtime by default, full **MWVM** with `mwvm-full`, **TEE** later for confidential jobs).
+**Aether runs backtesting workloads for trading strategies expressed in AgentScript (QAS) and compiled to WebAssembly.** The language and toolchain live in **`agentscript-compiler`**; Aether consumes **WASM + `JobSpec` + data commitments + tier policy**, validates in a sandbox, and executes the backtest path (wasmtime by default, full **MWVM** with `mwvm-full`, **TEE** later for confidential jobs).
 
 MWVM is the **portable execution kernel**; AgentScript is the **strategy surface** compiled into that world.
 
@@ -21,13 +21,13 @@ Design notes and economics in **`vaulted-knowledge-protocol/backtesting-infra`**
 - [x] Workspace crates: common, `aether-mwvm`, backtester, tee-runner, attest, oracle, node, CLI, contract stubs.
 - [x] `ExecutionTier`, `DataCommitment`, deterministic vector engine (`VectorBacktestEngine`), Merkle-checked oracle.
 - [x] **`aether-mwvm`** — `JobSpec::wasm_sha256` + optional WASM bytes on `TeeRunner::run_with_provider`; wasmtime instantiate (default); optional **`mwvm-full`** for `mwvm-sdk` when `morpheum-*` builds. `mwvm-sdk` `AgentBuilder` respects full `SdkConfig` (e.g. `model_serving = false`).
-- [ ] **`aether-cli`** still runs the **built-in demo** backtest only; no `--wasm` / file input path yet (Phase 1).
+- [x] **`aether-cli`** — `backtest --wasm <path>` runs demo dataset + WASM preflight (hash + instantiate). Without `--wasm`, behavior is unchanged (in-process engine only).
 
 ## Phase 1 — AgentScript WASM sandbox + resource policy
 
-- [ ] **Shared ABI spec** (doc + optional Rust types): exports and calling convention for “strategy guest” so `agentscript-compiler` codegen and `aether-mwvm` stay in lockstep.
-- [ ] **CLI / node:** load `.wasm` from disk (or job payload), set `wasm_sha256`, pass slice into `run_with_provider`.
-- [ ] **Resource limits:** map `NodeConfig` (`max_memory_mb`, timeouts) to wasmtime **memory limits** + **fuel** (and MWVM store policy when `mwvm-full`).
+- [x] **Shared ABI spec** — `docs/agentscript-guest-abi.md` + `aether_common::guest_abi` constants (`VERSION`, reserved export names). **Guest exports are not invoked yet**; `VectorBacktestEngine` still drives results.
+- [x] **CLI / node** — CLI: `--wasm` + `--wasm-max-memory-mb` / `--wasm-fuel`. Node: `aether-node <config.json> <strategy.wasm>` (optional second path); `JobHandler::claim_and_execute(spec, wasm)` passes bytes into the runner.
+- [x] **Resource limits (wasmtime path)** — `SandboxLimits` + per-memory `StoreLimits` + fuel during preflight in `aether-mwvm`. **`mwvm-full`:** limits not yet threaded into `mwvm-sdk` (same instantiate as before).
 - [ ] Optional: enforce `cargo_lock_hash` / toolchain when jobs claim reproducibility.
 
 ## Phase 2 — Network + contracts
