@@ -15,6 +15,8 @@ enum Commands {
     Backtest(commands::backtest::BacktestArgs),
     /// Compile + instantiate WASM only (Phase 0 smoke; optional SHA-256 check)
     VerifyWasm(commands::verify_wasm::VerifyWasmArgs),
+    /// Parse AgentScript (`.pine` / `.qas`) with agentscript-compiler
+    VerifyAgentscript(commands::verify_agentscript::VerifyAgentscriptArgs),
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -22,5 +24,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Backtest(args) => commands::backtest::run(args),
         Commands::VerifyWasm(args) => commands::verify_wasm::run(args),
+        Commands::VerifyAgentscript(args) => commands::verify_agentscript::run(args),
     }
 }

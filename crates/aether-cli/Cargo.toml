@@ -10,10 +10,12 @@ name = "aether"
 path = "src/main.rs"
 
 [dependencies]
+agentscript-compiler = { path = "../../../agentscript-compiler/crates/agentscript-compiler" }
 aether-backtester = { path = "../aether-backtester" }
 aether-common = { path = "../aether-common" }
 aether-mwvm = { path = "../aether-mwvm" }
 aether-oracle = { path = "../aether-oracle" }
 aether-tee-runner = { path = "../aether-tee-runner" }
 clap = { version = "4.5", features = ["derive"] }
+miette = { version = "7", features = ["fancy"] }
 serde_json = "1.0"
