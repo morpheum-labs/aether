@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/aether-common",
+    "crates/aether-backtester",
+    "crates/aether-tee-runner",
+    "crates/aether-attest",
+    "crates/aether-oracle",
+    "crates/aether-node",
+    "crates/aether-cli",
+    "contracts/job-queue",
+    "contracts/attestation-verifier",
+    "contracts/slashing-registry",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"

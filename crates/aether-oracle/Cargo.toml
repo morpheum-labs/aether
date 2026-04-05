@@ -1,0 +1,10 @@
+[package]
+name = "aether-oracle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Market data provider: loads OHLCV and checks Merkle commitment (stub mirror)"
+
+[dependencies]
+aether-common = { path = "../aether-common" }
+sha2 = "0.10"

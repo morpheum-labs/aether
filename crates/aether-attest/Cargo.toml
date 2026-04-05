@@ -1,0 +1,10 @@
+[package]
+name = "aether-attest"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "TEE attestation generation and verification (stubs + portable checks)"
+
+[dependencies]
+aether-common = { path = "../aether-common" }
+sha2 = "0.10"

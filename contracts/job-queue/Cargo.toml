@@ -1,0 +1,13 @@
+[package]
+name = "aether-contract-job-queue"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Thin job-queue message/state types (CosmWasm-ready layout)"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+aether-common = { path = "../../crates/aether-common" }
+serde = { version = "1.0", features = ["derive"] }

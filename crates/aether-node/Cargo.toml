@@ -1,0 +1,17 @@
+[package]
+name = "aether-node"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Operator daemon: discover jobs, execute via tee-runner, report results"
+
+[[bin]]
+name = "aether-node"
+path = "src/main.rs"
+
+[dependencies]
+aether-common = { path = "../aether-common" }
+aether-oracle = { path = "../aether-oracle" }
+aether-tee-runner = { path = "../aether-tee-runner" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

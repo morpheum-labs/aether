@@ -1,0 +1,15 @@
+[package]
+name = "aether-tee-runner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Tiered job runner: public fast path vs confidential attested path"
+
+[features]
+default = []
+tee = []
+
+[dependencies]
+aether-attest = { path = "../aether-attest" }
+aether-backtester = { path = "../aether-backtester" }
+aether-common = { path = "../aether-common" }
