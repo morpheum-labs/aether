@@ -12,6 +12,7 @@ path = "src/main.rs"
 [dependencies]
 aether-backtester = { path = "../aether-backtester" }
 aether-common = { path = "../aether-common" }
+aether-mwvm = { path = "../aether-mwvm" }
 aether-oracle = { path = "../aether-oracle" }
 aether-tee-runner = { path = "../aether-tee-runner" }
 clap = { version = "4.5", features = ["derive"] }

@@ -22,6 +22,10 @@ Design notes and economics in **`vaulted-knowledge-protocol/backtesting-infra`**
 - [x] `ExecutionTier`, `DataCommitment`, deterministic vector engine (`VectorBacktestEngine`), Merkle-checked oracle.
 - [x] **`aether-mwvm`** — `JobSpec::wasm_sha256` + optional WASM bytes on `TeeRunner::run_with_provider`; wasmtime instantiate (default); optional **`mwvm-full`** for `mwvm-sdk` when `morpheum-*` builds. `mwvm-sdk` `AgentBuilder` respects full `SdkConfig` (e.g. `model_serving = false`).
 - [x] **`aether-cli`** — `backtest --wasm <path>` runs demo dataset + WASM preflight (hash + instantiate). Without `--wasm`, behavior is unchanged (in-process engine only).
+- [x] **`aether verify-wasm`** — standalone compile + instantiate + optional `--expect-sha256` (CI / local smoke).
+- [x] **Root `README.md`** + `scripts/demo-backtest.sh` (bash entry for demo backtest).
+- [x] **`aether-tee-runner` integration tests** — `tests/sandbox_validate.rs` (commitment mismatch, missing WASM, hash mismatch, happy path).
+- [x] **`VecJobSource`** + **claimer unit tests** (`aether-node`) — in-memory job queue for Phase 0 discovery stub.
 
 ## Phase 1 — AgentScript WASM sandbox + resource policy
 

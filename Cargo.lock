@@ -36,6 +36,7 @@ version = "0.1.0"
 dependencies = [
  "aether-backtester",
  "aether-common",
+ "aether-mwvm",
  "aether-oracle",
  "aether-tee-runner",
  "clap",
