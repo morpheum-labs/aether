@@ -7,6 +7,10 @@
 
 #![forbid(unsafe_code)]
 
+mod aether_guest_stubs;
+
+pub use aether_guest_stubs::link_aether_guest_abi_v0;
+
 use aether_common::utils::crypto::sha256_32;
 use aether_common::{AetherError, AetherResult};
 
@@ -82,7 +86,10 @@ fn instantiate_job_wasm_inner(wasm: &[u8], limits: &SandboxLimits) -> AetherResu
     let engine = Engine::new(&config).map_err(|e| AetherError::Sandbox(format!("wasm engine: {e}")))?;
 
     let module = Module::new(&engine, wasm).map_err(|e| AetherError::Sandbox(format!("wasm compile: {e}")))?;
-    let linker: Linker<StoreState> = Linker::new(&engine);
+    let mut linker: Linker<StoreState> = Linker::new(&engine);
+    aether_guest_stubs::link_aether_guest_abi_v0(&mut linker).map_err(|e| {
+        AetherError::Sandbox(format!("wasm link aether stubs: {e}"))
+    })?;
 
     let store_limits: StoreLimits = StoreLimitsBuilder::new()
         .memory_size(max_mem)

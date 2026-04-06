@@ -27,11 +27,13 @@ This document is the contract between **`agentscript-compiler`** (QAS → WASM) 
 
 **Status:** Aether does **not** call these yet; the built-in `VectorBacktestEngine` still runs the demo path. The next integration step is: after sandbox preflight (hash + instantiate + limits), the host invokes `init` / `step` with data fed according to the finalized signature.
 
+**MWVM preflight:** `aether-mwvm` (non–`mwvm-full`) registers wasmtime linker stubs for the full `aether` import table via `link_aether_guest_abi_v0` (`aether-mwvm` crate) so compiled strategy WASM from `agentscript-compiler` can **instantiate** in CI; stubs return neutral values / Rust `f64` `ln`/`exp`/`powf` for `math_*` (not Pine-identical until the real host lands).
+
 ### Compiler emission today (`agentscript-compiler`)
 
 The compiler also exports legacy names **`init`** and **`on_bar`** as aliases of the same function indices as `aether_strategy_init` and `aether_strategy_step`, so older tooling keeps working while hosts adopt the reserved names.
 
-It imports a developing host module **`aether`**, including at least: `series_close`, `input_int`, `ta_sma`, `ta_ema`, `request_security`, `plot`, `series_hist` (see `crates/agentscript-compiler/src/codegen/hir_wasm.rs` for exact signatures). Aether / MWVM stubs should implement these when wiring execution.
+It imports a developing host module **`aether`**, including at least: `series_close`, `input_int`, `input_float`, `ta_sma`, `ta_ema`, `ta_crossover`, `ta_crossunder`, `request_security`, `request_financial`, `plot`, `series_hist`, `math_log`, `math_exp`, `math_pow` (see `crates/agentscript-compiler/src/codegen/hir_wasm.rs` and `wasm/abi.rs` for exact signatures). **`request_financial`** is `(i32×7) -> f64` (string slices + ignore flag in guest memory); MWVM stubs may return `0.0` until the financial oracle is wired. Pure transcendentals not in core WASM (`math.sqrt`, `math.round`) are implemented as `f64.sqrt` / `f64.nearest` in the guest where possible; `math.log` / `math.exp` / `math.pow` delegate to host imports for NaN/`na` alignment with Pine. **`ta_crossover` / `ta_crossunder`** are stateful: the host keeps the previous bar’s `(a, b)` and returns `1.0` when the crossing condition holds, then updates stored values. Aether / MWVM stubs should implement these when wiring execution.
 
 ## Imports
 

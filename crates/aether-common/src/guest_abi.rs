@@ -2,7 +2,10 @@
 //!
 //! `agentscript-compiler` codegen should target these names and conventions once
 //! emission lands. Aether uses this module as the single source of truth for
-//! constants; see `docs/agentscript-guest-abi.md` for the full contract.
+//! **export** constants; the evolving **`aether` import table** (names, order, indices)
+//! is defined alongside emission in `agentscript-compiler` `codegen/wasm/abi.rs`
+//! (`GUEST_ABI_V0_IMPORTS`) and mirrored for instantiation by `aether-mwvm`
+//! `link_aether_guest_abi_v0`. See `docs/agentscript-guest-abi.md` for the full contract.
 
 /// Bump when guest layout or export semantics change in a breaking way.
 pub const VERSION: u32 = 1;
