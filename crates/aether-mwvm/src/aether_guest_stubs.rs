@@ -41,7 +41,17 @@ pub fn link_aether_guest_abi_v0<T>(linker: &mut Linker<T>) -> wasmtime::Result<(
     linker.func_wrap(
         "aether",
         "request_financial",
-        |_: i32, _: i32, _: i32, _: i32, _: i32, _: i32, _: i32| -> f64 { 0.0 },
+        |_: i32,
+         _: i32,
+         _: i32,
+         _: i32,
+         _: i32,
+         _: i32,
+         _: i32,
+         _: i32,
+         _: i32,
+         _: i32|
+         -> f64 { 0.0 },
     )?;
     Ok(())
 }
