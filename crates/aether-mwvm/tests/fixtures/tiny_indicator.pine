@@ -1,0 +1,3 @@
+//@version=6
+indicator("tiny_strategy_guest_fixture")
+plot(close)

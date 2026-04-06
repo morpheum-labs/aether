@@ -2,9 +2,12 @@
 
 This document is the contract between **`agentscript-compiler`** (QAS → WASM) and **Aether** (load, sandbox, backtest). Rust constants live in `aether-common::guest_abi`.
 
+A **mirror** for compiler-side workflows lives at `agentscript-compiler/docs/agentscript-guest-abi.md` (same technical content; path relative to that repo).
+
 ## Versioning
 
 - `guest_abi::VERSION` (`u32`): increment on breaking changes to exports or calling convention.
+  - **2** — Guest export signatures are **`() -> i32`** (init) and **`(i32) -> i32`** (step); replaces the earlier preview where both were `() -> ()`.
 - Jobs may pin expected ABI version in `JobSpec` later; today only constants are defined.
 
 ## Module
@@ -14,28 +17,65 @@ This document is the contract between **`agentscript-compiler`** (QAS → WASM) 
 
 ## Exports (reserved)
 
-| Symbol | Role | Signature (planned) |
-|--------|------|---------------------|
-| `aether_strategy_init` | One-time setup | `() -> i32` — zero = success |
-| `aether_strategy_step` | Advance one bar / decision point | **v0 preview:** `() -> ()` (see below); **target:** bar index + OHLCV / series context via linear memory or fixed layout (TBD) |
+| Symbol | Role | Signature |
+|--------|------|-------------|
+| `aether_strategy_init` | One-time setup (reset `var`/`varip` flags, future tables) | **`() -> i32`** — **`0` = success**, non-zero = reserved error |
+| `aether_strategy_step` | One bar / decision point | **`(i32 bar_index) -> i32`** — **`0` = ok**; `bar_index` is the host’s **zero-based** bar ordinal |
 
-### v0 preview (`agentscript-compiler` emission today)
+Legacy aliases (same function indices, same signatures):
 
-`agentscript-compiler` emits **both** exports as **`() -> ()`**: `init` is an empty body; `on_bar` / `aether_strategy_step` runs the lowered indicator body (lets + `plot` calls) with stack-balanced codegen. This matches what `wasmparser` validates today and what MWVM preflight can load **once** missing `aether` imports are stubbed.
+| Symbol | Same as |
+|--------|---------|
+| `init` | `aether_strategy_init` |
+| `on_bar` | `aether_strategy_step` |
 
-**Next ABI bump:** change `init` to `() -> i32` (status code), and define `step` parameters (e.g. `i32 bar_index` plus pointer/length pairs for OHLCV buffers, or a single `i32` table offset into shared memory). Increment `guest_abi::VERSION` when that ships.
+### `memory`
 
-**Status:** Aether does **not** call these yet; the built-in `VectorBacktestEngine` still runs the demo path. The next integration step is: after sandbox preflight (hash + instantiate + limits), the host invokes `init` / `step` with data fed according to the finalized signature.
+Guest modules export **`memory`** (index `0` in compiler emission today) for string pools and future structured context. Hosts read/write via wasmtime linear memory APIs.
+
+### Bar index vs OHLCV today
+
+**v1** passes **`bar_index` only** into `step`. Series values (`series_close`, `series_hist`, etc.) still come from **`aether` imports**, with the host binding those calls to its current bar state (including `bar_index`). **Future ABI bumps** may add pointer/length pairs or a fixed struct in linear memory for OHLCV batches; document any change here and bump `guest_abi::VERSION`.
+
+### Host invocation sequence
+
+1. Instantiate module + link all **`aether`** imports (stubs or real host).
+2. Call **`aether_strategy_init` / `init`** once; check **`i32` return** is `0`.
+3. For each bar in replay order, call **`aether_strategy_step` / `on_bar`** with the bar index; check return is `0` (non-zero reserved for future fatals).
+
+**Status:** MWVM preflight can instantiate and link stubs; production **`VectorBacktestEngine`** still uses its demo path until this sequence is wired end-to-end.
 
 **MWVM preflight:** `aether-mwvm` (non–`mwvm-full`) registers wasmtime linker stubs for the full `aether` import table via `link_aether_guest_abi_v0` (`aether-mwvm` crate) so compiled strategy WASM from `agentscript-compiler` can **instantiate** in CI; stubs return neutral values / Rust `f64` `ln`/`exp`/`powf` for `math_*` (not Pine-identical until the real host lands).
 
-### Compiler emission today (`agentscript-compiler`)
+## Imports (`aether` module)
 
-The compiler also exports legacy names **`init`** and **`on_bar`** as aliases of the same function indices as `aether_strategy_init` and `aether_strategy_step`, so older tooling keeps working while hosts adopt the reserved names.
+The compiler emits a single import module **`aether`**. Names and **stable indices** are defined in `agentscript-compiler` `crates/agentscript-compiler/src/codegen/wasm/abi.rs` (`GUEST_ABI_V0_IMPORTS` — label retained for index stability).
 
-It imports a developing host module **`aether`**, including at least: `series_close`, `input_int`, `input_float`, `ta_sma`, `ta_ema`, `ta_crossover`, `ta_crossunder`, `request_security`, `request_financial`, `plot`, `series_hist`, `math_log`, `math_exp`, `math_pow` (see `crates/agentscript-compiler/src/codegen/hir_wasm.rs` and `wasm/abi.rs` for exact signatures). **`request_financial`** is `(i32×10) -> f64` (symbol / financial id / period / optional currency string slices, `gaps` and `ignore` flags in guest memory); MWVM stubs may return `0.0` until the financial oracle is wired. Pure transcendentals not in core WASM (`math.sqrt`, `math.round`) are implemented as `f64.sqrt` / `f64.nearest` in the guest where possible; `math.log` / `math.exp` / `math.pow` delegate to host imports for NaN/`na` alignment with Pine. **`ta_crossover` / `ta_crossunder`** are stateful: the host keeps the previous bar’s `(a, b)` and returns `1.0` when the crossing condition holds, then updates stored values. Aether / MWVM stubs should implement these when wiring execution.
+| Import | WASM signature (summary) | Role |
+|--------|--------------------------|------|
+| `series_close` | `() -> f64` | Current bar close |
+| `input_int` | `(i32 idx) -> i32` | Integer input by index |
+| `ta_sma` | `(i32 src_kind, i32 period) -> f64` | SMA on host stream |
+| `request_security` | `(i32 sym_off, i32 sym_len, i32 tf_off, i32 tf_len, f64 inner) -> f64` | MTF / foreign series; strings in guest memory |
+| `plot` | `(f64) -> ()` | Plot side effect |
+| `series_hist` | `(i32 offset) -> f64` | `close[offset]` (legacy) |
+| `ta_ema` | `(i32 src_kind, i32 period) -> f64` | EMA |
+| `input_float` | `(i32 idx) -> f64` | Float input |
+| `ta_crossover` / `ta_crossunder` | `(f64, f64) -> f64` | Stateful crosses; bool as `f64` |
+| `series_open` / `series_high` / `series_low` / `series_volume` / `series_time` | `() -> f64` | Current bar fields |
+| `series_hist_at` | `(i32 series_kind, i32 offset) -> f64` | Historical OHLCV by kind |
+| `ta_tr` | `() -> f64` | True range (current bar) |
+| `ta_atr` | `(i32 period) -> f64` | ATR |
+| `nz` | `(f64, f64) -> f64` | `nz`-style replacement |
+| `math_log` / `math_exp` | `(f64) -> f64` | Transcendentals |
+| `math_pow` | `(f64, f64) -> f64` | Power |
+| `request_financial` | **10× `i32` → `f64`** | Symbol / id / period / currency string slices + `gaps` / `ignore` flags in guest memory (v0 literal-oriented lowering) |
 
-## Imports
+**`request_financial`:** `(i32×10) -> f64` — symbol / financial id / period / optional currency string slices, `gaps` `0`/`1`, `ignore` `0`/`1`, `currency` sentinels per compiler docs; MWVM stubs may return `0.0` until the financial oracle is wired.
+
+**`ta_crossover` / `ta_crossunder`:** stateful on the host across `step` calls.
+
+## Imports (MWVM / `morpheum`)
 
 Strategy modules may need **MWVM host imports** (`morpheum::*`) when built for full `mwvm-sdk` linking. The wasmtime-only preflight in `aether-mwvm` accepts modules **without** those imports; modules that import `morpheum_*` require **`aether-mwvm` with feature `mwvm-full`** for instantiation.
 

@@ -1,6 +1,7 @@
-//! Wasmtime linker stubs for the `aether` import module emitted by `agentscript-compiler` (guest ABI v0).
+//! Wasmtime linker stubs for the `aether` import module emitted by `agentscript-compiler`.
 //!
 //! Keep in sync with `agentscript-compiler` `codegen/wasm/abi.rs` (`GUEST_ABI_V0_IMPORTS` order and signatures).
+//! Guest **exports** are **`() -> i32`** (`init`) and **`(i32) -> i32`** (`step`) as of `guest_abi::VERSION` **2**; this file only registers **imports**.
 
 use wasmtime::Linker;
 

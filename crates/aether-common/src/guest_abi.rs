@@ -8,7 +8,10 @@
 //! `link_aether_guest_abi_v0`. See `docs/agentscript-guest-abi.md` for the full contract.
 
 /// Bump when guest layout or export semantics change in a breaking way.
-pub const VERSION: u32 = 1;
+///
+/// **2** — exports `aether_strategy_init`: `() -> i32`, `aether_strategy_step`: `(i32) -> i32`
+/// (replaces preview `() -> ()` for both).
+pub const VERSION: u32 = 2;
 
 /// Declared in the custom section or guest metadata (future); name reserved here.
 pub const MODULE_NAME: &str = "aether_strategy";
@@ -16,5 +19,5 @@ pub const MODULE_NAME: &str = "aether_strategy";
 /// One-time setup: seed sizes, tables, etc. `(void) -> i32` — `0` ok, non-zero error.
 pub const EXPORT_INIT: &str = "aether_strategy_init";
 
-/// Single simulation step / bar advance. **v0 preview:** compiler emits `() -> ()`; see `docs/agentscript-guest-abi.md` for the planned bar/memory signature.
+/// Single simulation step / bar advance: **`(i32 bar_index) -> i32`** (`0` = ok). See `docs/agentscript-guest-abi.md`.
 pub const EXPORT_STEP: &str = "aether_strategy_step";
