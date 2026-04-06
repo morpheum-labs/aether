@@ -2,6 +2,8 @@
 
 This document is the **architecture and integration guide** for how **Aether** connects **untrusted guest WASM** (from `agentscript-compiler`) to **market and fundamental data**. It complements [`agentscript-guest-abi.md`](agentscript-guest-abi.md) (import/export contract) and the compiler’s [`docs/aether-integration-gap.md`](../../agentscript-compiler/docs/aether-integration-gap.md).
 
+**Compile → instantiate (today):** emit WASM with `agentscriptc --emit=wasm` (see integration gap §5.1). [`aether-mwvm`](../crates/aether-mwvm/tests/strategy_guest_smoke.rs) smoke-tests pinned guest bytes + `init`/`step`; a unified `aether-cli --wasm` entry point is not in-tree yet.
+
 ---
 
 ## 1. Goals

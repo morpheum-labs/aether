@@ -45,7 +45,7 @@ Guest modules export **`memory`** (index `0` in compiler emission today) for str
 
 **Status:** MWVM preflight can instantiate and link stubs; production **`VectorBacktestEngine`** still uses its demo path until this sequence is wired end-to-end.
 
-**MWVM preflight:** `aether-mwvm` (non–`mwvm-full`) registers wasmtime linker stubs for the full `aether` import table via `link_aether_guest_abi_v0` (`aether-mwvm` crate) so compiled strategy WASM from `agentscript-compiler` can **instantiate** in CI; stubs return neutral values / Rust `f64` `ln`/`exp`/`powf` for `math_*` (not Pine-identical until the real host lands).
+**MWVM preflight:** `aether-mwvm` (non–`mwvm-full`) registers wasmtime linker stubs for the full `aether` import table via `link_aether_guest_abi_v0` (`aether-mwvm` crate) so compiled strategy WASM from `agentscript-compiler` can **instantiate** in CI; stubs return neutral values / Rust `f64` `ln`/`exp`/`powf` for `math_*` (not Pine-identical until the real host lands). **Export smoke:** [`crates/aether-mwvm/tests/strategy_guest_smoke.rs`](../crates/aether-mwvm/tests/strategy_guest_smoke.rs) calls `init`/`step` on a pinned `.wasm` (see [`tests/fixtures/README.md`](../crates/aether-mwvm/tests/fixtures/README.md)).
 
 ## Imports (`aether` module)
 
