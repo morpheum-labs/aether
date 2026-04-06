@@ -13,5 +13,5 @@ pub const MODULE_NAME: &str = "aether_strategy";
 /// One-time setup: seed sizes, tables, etc. `(void) -> i32` — `0` ok, non-zero error.
 pub const EXPORT_INIT: &str = "aether_strategy_init";
 
-/// Single simulation step / bar advance. Signature TBD in doc; reserved name.
+/// Single simulation step / bar advance. **v0 preview:** compiler emits `() -> ()`; see `docs/agentscript-guest-abi.md` for the planned bar/memory signature.
 pub const EXPORT_STEP: &str = "aether_strategy_step";
