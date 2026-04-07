@@ -22,6 +22,11 @@ impl JobSandbox {
         Self { limits }
     }
 
+    #[must_use]
+    pub fn limits(&self) -> &SandboxLimits {
+        &self.limits
+    }
+
     pub fn validate(
         &self,
         spec: &JobSpec,

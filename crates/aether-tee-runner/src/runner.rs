@@ -1,5 +1,5 @@
 use aether_attest::SoftwareAttester;
-use aether_backtester::VectorBacktestEngine;
+use aether_backtester::{placeholder_guest_strategy_result, VectorBacktestEngine};
 use aether_common::traits::{Attester, DeterministicEngine, MarketDataProvider};
 use aether_common::types::{AttestedOutput, BacktestResult, ExecutionTier, JobSpec};
 use aether_common::{AetherError, AetherResult};
@@ -52,7 +52,22 @@ impl<P: MarketDataProvider> TeeRunner<P> {
         self.sandbox
             .validate(spec, &spec.data_commitment, wasm)?;
         let ohlcv = provider.load_ohlcv(&spec.data_commitment)?;
-        let result = DeterministicEngine::run_deterministic(&self.engine, spec, &ohlcv)?;
+
+        let result = if let Some(bytes) = wasm {
+            if ohlcv.len() < 3 {
+                return Err(AetherError::BacktestEngine(
+                    "need at least 3 bars (same threshold as VectorBacktestEngine)".into(),
+                ));
+            }
+            aether_mwvm::run_guest_strategy_bar_loop_with_limits(
+                bytes,
+                self.sandbox.limits(),
+                ohlcv.len(),
+            )?;
+            placeholder_guest_strategy_result(spec, ohlcv.len())?
+        } else {
+            DeterministicEngine::run_deterministic(&self.engine, spec, &ohlcv)?
+        };
 
         match spec.tier {
             ExecutionTier::Public => Ok((result, None)),

@@ -14,3 +14,6 @@ aether-attest = { path = "../aether-attest" }
 aether-backtester = { path = "../aether-backtester" }
 aether-common = { path = "../aether-common" }
 aether-mwvm = { path = "../aether-mwvm" }
+
+[dev-dependencies]
+aether-oracle = { path = "../aether-oracle" }

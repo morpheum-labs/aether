@@ -9,4 +9,4 @@ pub mod metrics;
 mod engine_tests;
 
 pub use application::run_backtest::RunBacktest;
-pub use engine::VectorBacktestEngine;
+pub use engine::{placeholder_guest_strategy_result, VectorBacktestEngine};

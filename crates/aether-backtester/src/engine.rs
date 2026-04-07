@@ -25,6 +25,40 @@ fn bps_to_factor(bps: u16) -> AetherResult<Decimal> {
     Ok(Decimal::from(bps) / Decimal::from(10_000u32))
 }
 
+/// Deterministic [`BacktestResult`] after the strategy guest WASM ran **`init` + one `step` per bar**
+/// on the host bar loop, **without** reading trades or equity from the guest yet.
+///
+/// The equity curve is **flat** at [`JobSpec::initial_capital`] so digest and metrics stay stable
+/// for a given job and bar count until guest PnL is wired through the ABI.
+pub fn placeholder_guest_strategy_result(spec: &JobSpec, bar_count: usize) -> AetherResult<BacktestResult> {
+    if bar_count == 0 {
+        return Err(AetherError::BacktestEngine(
+            "guest strategy path needs at least one bar".into(),
+        ));
+    }
+    let initial = parse_decimal(&spec.initial_capital)?;
+    if initial <= Decimal::ZERO {
+        return Err(AetherError::BacktestEngine(
+            "initial_capital must be positive".into(),
+        ));
+    }
+    let equity_series: Vec<Decimal> = vec![initial; bar_count];
+    let metrics = compute_metrics(initial, &equity_series, 0, 0)?;
+    let equity_curve: Vec<String> = equity_series
+        .iter()
+        .map(|d| d.normalize().to_string())
+        .collect();
+    let mut result = BacktestResult {
+        job_id: spec.id,
+        metrics,
+        equity_curve,
+        trades: vec![],
+        result_digest: [0u8; 32],
+    };
+    result.result_digest = digest_result(&result)?;
+    Ok(result)
+}
+
 fn digest_result(r: &BacktestResult) -> AetherResult<[u8; 32]> {
     let payload = ResultDigestPayload {
         job_id: &r.job_id,

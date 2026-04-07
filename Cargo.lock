@@ -128,6 +128,7 @@ dependencies = [
  "aether-backtester",
  "aether-common",
  "aether-mwvm",
+ "aether-oracle",
 ]
 
 [[package]]

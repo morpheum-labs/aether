@@ -11,6 +11,7 @@ mod aether_guest_stubs;
 
 pub use aether_guest_stubs::link_aether_guest_abi_v0;
 
+use aether_common::guest_abi::{EXPORT_INIT, EXPORT_STEP};
 use aether_common::utils::crypto::sha256_32;
 use aether_common::{AetherError, AetherResult};
 
@@ -75,6 +76,26 @@ fn instantiate_job_wasm_inner(wasm: &[u8], _limits: &SandboxLimits) -> AetherRes
 
 #[cfg(not(feature = "mwvm-full"))]
 fn instantiate_job_wasm_inner(wasm: &[u8], limits: &SandboxLimits) -> AetherResult<()> {
+    let (_store, _instance) = wasmtime_prepare_aether_guest(wasm, limits)?;
+    Ok(())
+}
+
+/// Wasmtime store state for [`wasmtime_prepare_aether_guest`] (memory limits + fuel).
+#[derive(Debug)]
+struct StoreState {
+    limits: wasmtime::StoreLimits,
+}
+
+/// Link `aether::*` stubs, apply [`SandboxLimits`], compile, and instantiate. Used for both
+/// preflight-only checks and [`run_guest_strategy_bar_loop_with_limits`].
+///
+/// This path is **always wasmtime**, even when the `mwvm-full` feature uses `mwvm-sdk` for
+/// [`instantiate_job_wasm_inner`], so AgentScript guest modules keep a single execution route
+/// for `aether_strategy_*` exports.
+fn wasmtime_prepare_aether_guest(
+    wasm: &[u8],
+    limits: &SandboxLimits,
+) -> AetherResult<(wasmtime::Store<StoreState>, wasmtime::Instance)> {
     use wasmtime::{
         Config, Engine, Linker, Module, Store, StoreLimits, StoreLimitsBuilder,
     };
@@ -108,16 +129,59 @@ fn instantiate_job_wasm_inner(wasm: &[u8], limits: &SandboxLimits) -> AetherResu
         .set_fuel(limits.fuel_units)
         .map_err(|e| AetherError::Sandbox(format!("wasm fuel: {e}")))?;
 
-    linker
+    let instance = linker
         .instantiate(&mut store, &module)
         .map_err(|e| AetherError::Sandbox(format!("wasm instantiate: {e}")))?;
-    Ok(())
+
+    Ok((store, instance))
 }
 
-#[cfg(not(feature = "mwvm-full"))]
-#[derive(Debug)]
-struct StoreState {
-    limits: wasmtime::StoreLimits,
+/// Run the strategy guest ABI: call [`EXPORT_INIT`], then [`EXPORT_STEP`] once per bar
+/// (`bar_index` = `0 .. bar_count`).
+///
+/// Caller must supply the same `wasm` bytes validated against [`JobSpec::wasm_sha256`] when the
+/// job pins a hash. Uses wasmtime + [`link_aether_guest_abi_v0`] regardless of `mwvm-full`.
+pub fn run_guest_strategy_bar_loop_with_limits(
+    wasm: &[u8],
+    limits: &SandboxLimits,
+    bar_count: usize,
+) -> AetherResult<()> {
+    if bar_count > i32::MAX as usize {
+        return Err(AetherError::Sandbox(
+            "bar_count exceeds i32::MAX (guest step bar_index type)".into(),
+        ));
+    }
+
+    let (mut store, instance) = wasmtime_prepare_aether_guest(wasm, limits)?;
+
+    let init = instance
+        .get_typed_func::<(), i32>(&mut store, EXPORT_INIT)
+        .map_err(|e| AetherError::Sandbox(format!("missing {EXPORT_INIT} export: {e}")))?;
+    let step = instance
+        .get_typed_func::<(i32,), i32>(&mut store, EXPORT_STEP)
+        .map_err(|e| AetherError::Sandbox(format!("missing {EXPORT_STEP} export: {e}")))?;
+
+    let code = init
+        .call(&mut store, ())
+        .map_err(|e| AetherError::Sandbox(format!("guest {EXPORT_INIT}: {e}")))?;
+    if code != 0 {
+        return Err(AetherError::Sandbox(format!(
+            "guest {EXPORT_INIT} returned error code {code}"
+        )));
+    }
+
+    for bar in 0..bar_count as i32 {
+        let code = step
+            .call(&mut store, (bar,))
+            .map_err(|e| AetherError::Sandbox(format!("guest {EXPORT_STEP} at bar {bar}: {e}")))?;
+        if code != 0 {
+            return Err(AetherError::Sandbox(format!(
+                "guest {EXPORT_STEP} returned error code {code} at bar_index {bar}"
+            )));
+        }
+    }
+
+    Ok(())
 }
 
 /// Verify SHA-256 of `wasm` matches `expected`, then run [`instantiate_job_wasm`].
