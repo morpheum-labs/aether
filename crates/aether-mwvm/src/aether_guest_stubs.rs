@@ -1,9 +1,9 @@
 //! Wasmtime linker stubs for the `aether` import module emitted by `agentscript-compiler`.
 //!
 //! Keep in sync with `agentscript-compiler` `codegen/wasm/abi.rs` (`GUEST_ABI_V0_IMPORTS` order and signatures).
-//! Guest **exports** are **`() -> i32`** (`init`) and **`(i32) -> i32`** (`step`) as of `guest_abi::VERSION` **2**; this file only registers **imports**.
+//! Guest **exports** are **`() -> i32`** (`init`) and **`(i32) -> i32`** (`step`) as of `guest_abi::VERSION` **3**; this file only registers **imports**.
 
-use wasmtime::Linker;
+use wasmtime::{Caller, Linker};
 
 /// Register all `aether::*` functions required by `emit_hir_guest_wasm` in `agentscript-compiler`.
 pub fn link_aether_guest_abi_v0<T>(linker: &mut Linker<T>) -> wasmtime::Result<()> {
@@ -53,6 +53,27 @@ pub fn link_aether_guest_abi_v0<T>(linker: &mut Linker<T>) -> wasmtime::Result<(
          _: i32,
          _: i32|
          -> f64 { 0.0 },
+    )?;
+    linker.func_wrap(
+        "aether",
+        "series_string_utf8",
+        |mut caller: Caller<'_, T>, _kind: i32, dst: i32, max_len: i32| -> i32 {
+            let Some(mem) = caller
+                .get_export("memory")
+                .and_then(|e| e.into_memory())
+            else {
+                return -1;
+            };
+            let demo = b"DEMO";
+            let n = (demo.len() as i32).min(max_len).max(0) as usize;
+            if n == 0 {
+                return 0;
+            }
+            if mem.write(&mut caller, dst as usize, &demo[..n]).is_err() {
+                return -1;
+            }
+            n as i32
+        },
     )?;
     Ok(())
 }

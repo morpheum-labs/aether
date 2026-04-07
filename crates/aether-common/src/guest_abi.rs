@@ -11,7 +11,10 @@
 ///
 /// **2** — exports `aether_strategy_init`: `() -> i32`, `aether_strategy_step`: `(i32) -> i32`
 /// (replaces preview `() -> ()` for both).
-pub const VERSION: u32 = 2;
+///
+/// **3** — required import `aether::series_string_utf8` `(i32 kind, i32 dst_off, i32 max_len) -> i32`
+/// for series `string` metadata (e.g. `syminfo.ticker`) materialized into guest memory before `request_security`.
+pub const VERSION: u32 = 3;
 
 /// Declared in the custom section or guest metadata (future); name reserved here.
 pub const MODULE_NAME: &str = "aether_strategy";

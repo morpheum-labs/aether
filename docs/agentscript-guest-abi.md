@@ -8,6 +8,7 @@ A **mirror** for compiler-side workflows lives at `agentscript-compiler/docs/age
 
 - `guest_abi::VERSION` (`u32`): increment on breaking changes to exports or calling convention.
   - **2** — Guest export signatures are **`() -> i32`** (init) and **`(i32) -> i32`** (step); replaces the earlier preview where both were `() -> ()`.
+  - **3** — Adds required import **`series_string_utf8`** `(i32 kind, i32 dst_off, i32 max_len) -> i32` so series `string` values (e.g. `syminfo.ticker`) can be written into guest memory before `request_security`; see import table below.
 - Jobs may pin expected ABI version in `JobSpec` later; today only constants are defined.
 
 ## Module
@@ -31,7 +32,7 @@ Legacy aliases (same function indices, same signatures):
 
 ### `memory`
 
-Guest modules export **`memory`** (index `0` in compiler emission today) for string pools and future structured context. Hosts read/write via wasmtime linear memory APIs.
+Guest modules export **`memory`** (index `0` in compiler emission today) for compile-time string pools, **optional zero-padded scratch** after the pool (two slots of up to **512** bytes each for symbol vs timeframe when `syminfo.*` is used in `request.security`), and future structured context. Hosts read/write via wasmtime linear memory APIs.
 
 ### Bar index vs OHLCV today
 
@@ -70,8 +71,11 @@ The compiler emits a single import module **`aether`**. Names and **stable indic
 | `math_log` / `math_exp` | `(f64) -> f64` | Transcendentals |
 | `math_pow` | `(f64, f64) -> f64` | Power |
 | `request_financial` | **10× `i32` → `f64`** | Symbol / id / period / currency string slices + `gaps` / `ignore` flags in guest memory (v0 literal-oriented lowering) |
+| `series_string_utf8` | `(i32 kind, i32 dst_off, i32 max_len) -> i32` | Host writes UTF-8 for the current bar’s series string; `kind` **`0`** = `syminfo.ticker`, **`1`** = `syminfo.prefix`; returns bytes written (truncates to `max_len`), **`-1`** = na / skip |
 
 **`request_financial`:** `(i32×10) -> f64` — symbol / financial id / period / optional currency string slices, `gaps` `0`/`1`, `ignore` `0`/`1`, `currency` sentinels per compiler docs; MWVM stubs may return `0.0` until the financial oracle is wired.
+
+**`series_string_utf8`:** Called from the guest immediately before passing `dst_off` / returned length into `request_security` when the symbol or timeframe expression is a series `string` builtin. Production hosts supply chart symbol / prefix from job context.
 
 **`ta_crossover` / `ta_crossunder`:** stateful on the host across `step` calls.
 

@@ -14,8 +14,8 @@ const TINY_STRATEGY_GUEST_WASM: &[u8] = include_bytes!("fixtures/tiny_strategy_g
 #[test]
 fn pinned_strategy_guest_wasm_calls_init_and_step() {
     assert_eq!(
-        GUEST_ABI_VERSION, 2,
-        "docs and compiler assume guest_abi::VERSION == 2 for v1 export signatures"
+        GUEST_ABI_VERSION, 3,
+        "docs and compiler assume guest_abi::VERSION == 3 (includes series_string_utf8 import)"
     );
 
     let engine = Engine::default();
