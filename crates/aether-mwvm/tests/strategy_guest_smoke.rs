@@ -6,8 +6,7 @@
 //! [`fixtures/README.md`](fixtures/README.md) for regeneration.
 
 use aether_common::guest_abi::VERSION as GUEST_ABI_VERSION;
-use aether_mwvm::link_aether_guest_abi_v0;
-use wasmtime::{Engine, Linker, Module, Store};
+use aether_mwvm::{run_guest_strategy_bar_loop_with_limits, GuestReplay, SandboxLimits};
 
 const TINY_STRATEGY_GUEST_WASM: &[u8] = include_bytes!("fixtures/tiny_strategy_guest.wasm");
 
@@ -18,24 +17,13 @@ fn pinned_strategy_guest_wasm_calls_init_and_step() {
         "docs and compiler assume guest_abi::VERSION == 3 (includes series_string_utf8 import)"
     );
 
-    let engine = Engine::default();
-    let module = Module::new(&engine, TINY_STRATEGY_GUEST_WASM).expect("wasmtime parse module");
-    let mut linker: Linker<()> = Linker::new(&engine);
-    link_aether_guest_abi_v0(&mut linker).expect("link aether stubs");
-    let mut store = Store::new(&engine, ());
-    let instance = linker
-        .instantiate(&mut store, &module)
-        .expect("instantiate with aether imports");
-
-    let init = instance
-        .get_typed_func::<(), i32>(&mut store, "aether_strategy_init")
-        .expect("aether_strategy_init export");
-    let step = instance
-        .get_typed_func::<(i32,), i32>(&mut store, "aether_strategy_step")
-        .expect("aether_strategy_step export");
-
-    assert_eq!(init.call(&mut store, ()).expect("init"), 0);
-    for bar in 0..3 {
-        assert_eq!(step.call(&mut store, (bar,)).expect("step"), 0);
-    }
+    run_guest_strategy_bar_loop_with_limits(
+        TINY_STRATEGY_GUEST_WASM,
+        &SandboxLimits {
+            max_memory_bytes: 64 * 1024 * 1024,
+            fuel_units: 50_000_000,
+        },
+        GuestReplay::Synthetic { bar_count: 3 },
+    )
+    .expect("init + 3 steps with neutral imports");
 }

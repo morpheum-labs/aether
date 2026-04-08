@@ -3,7 +3,7 @@ use aether_backtester::{placeholder_guest_strategy_result, VectorBacktestEngine}
 use aether_common::traits::{Attester, DeterministicEngine, MarketDataProvider};
 use aether_common::types::{AttestedOutput, BacktestResult, ExecutionTier, JobSpec};
 use aether_common::{AetherError, AetherResult};
-use aether_mwvm::SandboxLimits;
+use aether_mwvm::{GuestReplay, SandboxLimits};
 
 use crate::sandbox::JobSandbox;
 
@@ -62,7 +62,7 @@ impl<P: MarketDataProvider> TeeRunner<P> {
             aether_mwvm::run_guest_strategy_bar_loop_with_limits(
                 bytes,
                 self.sandbox.limits(),
-                ohlcv.len(),
+                GuestReplay::Ohlcv(ohlcv.as_slice()),
             )?;
             placeholder_guest_strategy_result(spec, ohlcv.len())?
         } else {
