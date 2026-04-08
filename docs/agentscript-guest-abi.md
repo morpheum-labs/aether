@@ -36,7 +36,7 @@ Guest modules export **`memory`** (index `0` in compiler emission today) for com
 
 ### Bar index vs OHLCV today
 
-**v1** passes **`bar_index` only** into `step`. Series values (`series_close`, `series_hist`, etc.) still come from **`aether` imports**, with the host binding those calls to its current bar state (including `bar_index`). **Future ABI bumps** may add pointer/length pairs or a fixed struct in linear memory for OHLCV batches; document any change here and bump `guest_abi::VERSION`.
+**v1** passes **`bar_index` only** into `step`. Series values (`series_close`, `series_hist`, etc.) still come from **`aether` imports**, with the host binding those calls to its current bar state (including `bar_index`). **Aether today:** `aether-mwvm::run_guest_strategy_bar_loop_with_limits` accepts `GuestReplay::Ohlcv` so wasmtime stubs read the committed dataset row for `current_bar` before each `aether_strategy_step` (`series_*`, `series_hist*`, and host-side `ta_sma` / `ta_ema` / `ta_tr` / `ta_atr` / `ta_crossover` / `ta_crossunder`). **`GuestReplay::Synthetic`** keeps neutral zeros for CI. See `crates/aether-mwvm/src/lib.rs` and `bar_series_host.rs`. **Future ABI bumps** may add pointer/length pairs or a fixed struct in linear memory for OHLCV batches; document any change here and bump `guest_abi::VERSION`.
 
 ### Host invocation sequence
 
@@ -44,7 +44,7 @@ Guest modules export **`memory`** (index `0` in compiler emission today) for com
 2. Call **`aether_strategy_init` / `init`** once; check **`i32` return** is `0`.
 3. For each bar in replay order, call **`aether_strategy_step` / `on_bar`** with the bar index; check return is `0` (non-zero reserved for future fatals).
 
-**Status:** MWVM preflight can instantiate and link stubs; production **`VectorBacktestEngine`** still uses its demo path until this sequence is wired end-to-end.
+**Status:** MWVM preflight can instantiate and link stubs. **`TeeRunner`** (WASM jobs) runs **`init` → `step`×N** with **`GuestReplay::Ohlcv`** so imports see the job’s OHLCV replay; reported **`BacktestResult`** metrics/trades remain a **placeholder** until guest fills are read back. Without WASM, **`VectorBacktestEngine`** still drives the demo vector path.
 
 **MWVM preflight:** `aether-mwvm` (non–`mwvm-full`) registers wasmtime linker stubs for the full `aether` import table via `link_aether_guest_abi_v0` (`aether-mwvm` crate) so compiled strategy WASM from `agentscript-compiler` can **instantiate** in CI; stubs return neutral values / Rust `f64` `ln`/`exp`/`powf` for `math_*` (not Pine-identical until the real host lands). **Export smoke:** [`crates/aether-mwvm/tests/strategy_guest_smoke.rs`](../crates/aether-mwvm/tests/strategy_guest_smoke.rs) calls `init`/`step` on a pinned `.wasm` (see [`tests/fixtures/README.md`](../crates/aether-mwvm/tests/fixtures/README.md)).
 

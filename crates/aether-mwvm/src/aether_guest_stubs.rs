@@ -13,7 +13,7 @@ use crate::AetherGuestStoreState;
 
 /// Register all `aether::*` functions required by `emit_hir_guest_wasm` in `agentscript-compiler`.
 pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> wasmtime::Result<()> {
-    linker.func_wrap("aether", "series_close", |mut caller: Caller<'_, AetherGuestStoreState>| -> f64 {
+    linker.func_wrap("aether", "series_close", |caller: Caller<'_, AetherGuestStoreState>| -> f64 {
         match caller.data().bar_feed.as_ref() {
             Some(feed) => feed.series_close(),
             None => 0.0,
@@ -25,7 +25,7 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
     linker.func_wrap(
         "aether",
         "ta_sma",
-        |mut caller: Caller<'_, AetherGuestStoreState>, src: i32, period: i32| -> f64 {
+        |caller: Caller<'_, AetherGuestStoreState>, src: i32, period: i32| -> f64 {
             match caller.data().bar_feed.as_ref() {
                 Some(feed) => feed.ta_sma(src, period),
                 None => 0.0,
@@ -43,7 +43,7 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
     linker.func_wrap(
         "aether",
         "series_hist",
-        |mut caller: Caller<'_, AetherGuestStoreState>, offset: i32| -> f64 {
+        |caller: Caller<'_, AetherGuestStoreState>, offset: i32| -> f64 {
             match caller.data().bar_feed.as_ref() {
                 Some(feed) => feed.hist_at(0, offset),
                 None => 0.0,
@@ -53,7 +53,7 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
     linker.func_wrap(
         "aether",
         "ta_ema",
-        |mut caller: Caller<'_, AetherGuestStoreState>, src: i32, period: i32| -> f64 {
+        |caller: Caller<'_, AetherGuestStoreState>, src: i32, period: i32| -> f64 {
             match caller.data().bar_feed.as_ref() {
                 Some(feed) => feed.ta_ema(src, period),
                 None => 0.0,
@@ -85,19 +85,19 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
             }
         },
     )?;
-    linker.func_wrap("aether", "series_open", |mut caller: Caller<'_, AetherGuestStoreState>| -> f64 {
+    linker.func_wrap("aether", "series_open", |caller: Caller<'_, AetherGuestStoreState>| -> f64 {
         match caller.data().bar_feed.as_ref() {
             Some(feed) => feed.series_open(),
             None => 0.0,
         }
     })?;
-    linker.func_wrap("aether", "series_high", |mut caller: Caller<'_, AetherGuestStoreState>| -> f64 {
+    linker.func_wrap("aether", "series_high", |caller: Caller<'_, AetherGuestStoreState>| -> f64 {
         match caller.data().bar_feed.as_ref() {
             Some(feed) => feed.series_high(),
             None => 0.0,
         }
     })?;
-    linker.func_wrap("aether", "series_low", |mut caller: Caller<'_, AetherGuestStoreState>| -> f64 {
+    linker.func_wrap("aether", "series_low", |caller: Caller<'_, AetherGuestStoreState>| -> f64 {
         match caller.data().bar_feed.as_ref() {
             Some(feed) => feed.series_low(),
             None => 0.0,
@@ -106,7 +106,7 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
     linker.func_wrap(
         "aether",
         "series_volume",
-        |mut caller: Caller<'_, AetherGuestStoreState>| -> f64 {
+        |caller: Caller<'_, AetherGuestStoreState>| -> f64 {
             match caller.data().bar_feed.as_ref() {
                 Some(feed) => feed.series_volume(),
                 None => 0.0,
@@ -116,7 +116,7 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
     linker.func_wrap(
         "aether",
         "series_time",
-        |mut caller: Caller<'_, AetherGuestStoreState>| -> f64 {
+        |caller: Caller<'_, AetherGuestStoreState>| -> f64 {
             match caller.data().bar_feed.as_ref() {
                 Some(feed) => feed.series_time(),
                 None => 0.0,
@@ -126,14 +126,14 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
     linker.func_wrap(
         "aether",
         "series_hist_at",
-        |mut caller: Caller<'_, AetherGuestStoreState>, kind: i32, offset: i32| -> f64 {
+        |caller: Caller<'_, AetherGuestStoreState>, kind: i32, offset: i32| -> f64 {
             match caller.data().bar_feed.as_ref() {
                 Some(feed) => feed.hist_at(kind, offset),
                 None => 0.0,
             }
         },
     )?;
-    linker.func_wrap("aether", "ta_tr", |mut caller: Caller<'_, AetherGuestStoreState>| -> f64 {
+    linker.func_wrap("aether", "ta_tr", |caller: Caller<'_, AetherGuestStoreState>| -> f64 {
         match caller.data().bar_feed.as_ref() {
             Some(feed) => feed.ta_tr(),
             None => 0.0,
@@ -142,7 +142,7 @@ pub fn link_aether_guest_abi_v0(linker: &mut Linker<AetherGuestStoreState>) -> w
     linker.func_wrap(
         "aether",
         "ta_atr",
-        |mut caller: Caller<'_, AetherGuestStoreState>, period: i32| -> f64 {
+        |caller: Caller<'_, AetherGuestStoreState>, period: i32| -> f64 {
             match caller.data().bar_feed.as_ref() {
                 Some(feed) => feed.ta_atr(period),
                 None => 0.0,
